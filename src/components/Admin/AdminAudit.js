@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:8000/admin';
+const API_BASE = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/admin`;
 
 export default function AdminAudit({ filters }) {
   const [logs, setLogs] = useState([]);
