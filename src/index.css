@@ -1,0 +1,87 @@
+:root {
+  --c-bg: #040608;
+  --c-bg2: #080c10;
+  --c-bg3: #0c1219;
+  --c-surface: #0f1820;
+  --c-surface2: #131f2b;
+  --c-border: #1a2535;
+  --c-border2: #243347;
+  --c-accent: #4DFFB4;
+  --c-accent2: #00D4FF;
+  --c-accent-dim: rgba(77,255,180,0.08);
+  --c-accent-glow: rgba(77,255,180,0.25);
+  --c-accent2-dim: rgba(0,212,255,0.08);
+  --c-red: #FF4466;
+  --c-red-dim: rgba(255,68,102,0.1);
+  --c-orange: #FFB347;
+  --c-text: #E2EBF0;
+  --c-text2: #6B8599;
+  --c-text3: #364A5A;
+  --f-display: 'Space Grotesk', sans-serif;
+  --f-mono: 'JetBrains Mono', monospace;
+  --r: 6px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: var(--f-display);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Noise texture overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.4;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--c-bg); }
+::-webkit-scrollbar-thumb { background: var(--c-border2); border-radius: 2px; }
+
+a { color: var(--c-accent); text-decoration: none; }
+button { cursor: pointer; font-family: var(--f-display); }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+@keyframes glitch {
+  0%, 100% { clip-path: inset(0 0 100% 0); }
+  10% { clip-path: inset(10% 0 60% 0); transform: translate(-2px); }
+  20% { clip-path: inset(40% 0 30% 0); transform: translate(2px); }
+  30% { clip-path: inset(70% 0 5% 0); transform: translate(-1px); }
+  40% { clip-path: inset(0 0 100% 0); }
+}
+@keyframes scanDown {
+  0% { top: -2px; }
+  100% { top: 100%; }
+}
+@keyframes borderGlow {
+  0%, 100% { border-color: var(--c-border); }
+  50% { border-color: var(--c-border2); }
+}

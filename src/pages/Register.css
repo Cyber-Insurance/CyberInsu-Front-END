@@ -1,0 +1,47 @@
+.reg-root { justify-content: center; align-items: center; }
+
+.reg-bg {
+  position: fixed; inset: 0; z-index: 0;
+  background: radial-gradient(ellipse at 60% 40%, rgba(0,212,255,0.04) 0%, transparent 60%),
+              radial-gradient(ellipse at 20% 80%, rgba(77,255,180,0.04) 0%, transparent 50%);
+}
+
+.reg-roles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.reg-role {
+  background: var(--c-bg2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  transition: all 0.15s;
+  text-align: left;
+}
+.reg-role:hover { border-color: var(--c-border2); background: var(--c-bg3); }
+.reg-role--active {
+  border-color: var(--c-accent);
+  background: var(--c-accent-dim);
+  box-shadow: 0 0 0 3px var(--c-accent-dim);
+}
+.reg-role-icon { font-size: 16px; color: var(--c-accent); margin-bottom: 2px; }
+.reg-role--active .reg-role-icon { color: var(--c-accent); }
+.reg-role-label { font-size: 13px; font-weight: 600; color: var(--c-text); }
+.reg-role-desc { font-size: 11px; color: var(--c-text2); }
+
+.reg-strength {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+.reg-strength-bar { display: flex; gap: 4px; flex: 1; }
+.reg-strength-seg { height: 3px; flex: 1; border-radius: 2px; transition: background 0.3s; }
+.reg-strength span { font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.06em; white-space: nowrap; }
