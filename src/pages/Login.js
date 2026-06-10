@@ -185,7 +185,7 @@ export default function Login() {
                 <div className="login-card-dots">
                   <span /><span /><span />
                 </div>
-                <span className="login-card-id">AUTH_MODULE_v2.4</span>
+                <span className="login-card-id">AUTH_MODULE_v2.5</span>
               </div>
 
               <h1 className="login-title">Connexion</h1>
