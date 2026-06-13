@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8000',
+  baseURL: process.env.REACT_APP_API_URL || '',
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -31,6 +31,8 @@ export const authAPI = {
   login: (data) => api.post('/auth/login', data),
   verifyMfa: (data) => api.post('/auth/verify-mfa', data),
   setupMfa: () => api.post('/auth/setup-mfa'),
+  confirmMfa: (data) => api.post('/auth/confirm-mfa', data),
+  disableMfa: (data) => api.post('/auth/disable-mfa', data),
   me: () => api.get('/auth/me'),
 };
 

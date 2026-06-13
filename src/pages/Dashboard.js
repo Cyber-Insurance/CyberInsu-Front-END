@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import MFASetupModal from '../components/MFASetupModal';
 import './Dashboard.css';
 
 const ROLE_CONFIG = {
@@ -74,18 +75,29 @@ const ROLE_CONFIG = {
 };
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [activeNav, setActiveNav] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mfaModal, setMfaModal] = useState(null);
 
   if (!user) return null;
+
+  const handleMfaSuccess = () => refreshUser();
 
   const config = ROLE_CONFIG[user.role] || ROLE_CONFIG.courtier;
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
   return (
+    <>
+    {mfaModal && (
+      <MFASetupModal
+        mode={mfaModal}
+        onClose={() => setMfaModal(null)}
+        onSuccess={handleMfaSuccess}
+      />
+    )}
     <div className={`dash ${sidebarOpen ? 'dash--open' : ''}`}>
       {/* Sidebar */}
       <aside className="dash-sidebar">
@@ -115,13 +127,7 @@ export default function Dashboard() {
               <button
                 key={item.id}
                 className={`dash-nav-item ${activeNav === item.id ? 'dash-nav-item--active' : ''}`}
-                onClick={() => {
-                  if (user.role === 'admin' && item.id !== 'overview') {
-                    navigate(`/admin?tab=${item.id}`);
-                  } else {
-                    setActiveNav(item.id);
-                  }
-                }}
+                onClick={() => setActiveNav(item.id)}
                 style={activeNav === item.id ? { borderColor: config.color + '50', background: config.color + '10', color: config.color } : {}}
                 title={!sidebarOpen ? item.label : ''}
               >
@@ -233,12 +239,34 @@ export default function Dashboard() {
               <div className="dash-sec-row">
                 <div className="dash-sec-info">
                   <span className="dash-sec-label">MFA (Google Authenticator)</span>
-                  <span className="dash-sec-value">{user.mfa_enabled ? 'Actif depuis votre configuration' : 'Non configuré'}</span>
+                  <span className="dash-sec-value">{user.mfa_enabled ? 'Actif — code requis à chaque connexion' : 'Non configuré'}</span>
                 </div>
-                <div className="dash-sec-badge" style={user.mfa_enabled
-                  ? { color: '#4DFFB4', background: 'rgba(77,255,180,0.08)', borderColor: 'rgba(77,255,180,0.2)' }
-                  : { color: '#FFB347', background: 'rgba(255,179,71,0.08)', borderColor: 'rgba(255,179,71,0.2)' }}>
-                  {user.mfa_enabled ? '✓ ACTIVÉ' : '⚠ INACTIF'}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div className="dash-sec-badge" style={user.mfa_enabled
+                    ? { color: '#4DFFB4', background: 'rgba(77,255,180,0.08)', borderColor: 'rgba(77,255,180,0.2)' }
+                    : { color: '#FFB347', background: 'rgba(255,179,71,0.08)', borderColor: 'rgba(255,179,71,0.2)' }}>
+                    {user.mfa_enabled ? '✓ ACTIVÉ' : '⚠ INACTIF'}
+                  </div>
+                  <button
+                    onClick={() => setMfaModal(user.mfa_enabled ? 'disable' : 'setup')}
+                    style={{
+                      padding: '5px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid',
+                      fontSize: '11px',
+                      fontFamily: 'var(--f-mono)',
+                      letterSpacing: '0.06em',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                      ...(user.mfa_enabled
+                        ? { color: '#FF4466', background: 'rgba(255,68,102,0.08)', borderColor: 'rgba(255,68,102,0.25)' }
+                        : { color: '#4DFFB4', background: 'rgba(77,255,180,0.08)', borderColor: 'rgba(77,255,180,0.2)' }
+                      ),
+                    }}
+                  >
+                    {user.mfa_enabled ? 'DÉSACTIVER' : 'ACTIVER'}
+                  </button>
                 </div>
               </div>
             </div>
@@ -263,5 +291,6 @@ export default function Dashboard() {
         </div>
       </main>
     </div>
+    </>
   );
 }
