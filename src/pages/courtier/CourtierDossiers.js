@@ -1,11 +1,147 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { courtierAPI } from '../../services/courtierAPI';
+import { analyseAPI } from '../../services/analyseAPI';
+import { AnalyseBadge, AnalysePanel, EN_COURS } from '../../components/AnalyseIA';
+import '../../components/AnalyseIA.css';
 
 const STATUS_LABELS = {
   draft: 'Brouillon', soumis: 'Soumis', en_analyse: 'En analyse',
   devis_genere: 'Devis généré', valide: 'Validé', rejete: 'Rejeté',
 };
+
+const POLL_MS = 3000;
+
+function AnalyseModal({ dossier, onClose }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [service, setService] = useState(null);
+  const [actionLoading, setActionLoading] = useState(null);
+  const [ouvert, setOuvert] = useState(null);
+  const pollRef = useRef(null);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await analyseAPI.getAnalysesDossier(dossier.id);
+      setData(res.data);
+      setError('');
+    } catch (e) {
+      setError(e.response?.data?.detail || 'Impossible de charger les analyses');
+    } finally { setLoading(false); }
+  }, [dossier.id]);
+
+  useEffect(() => {
+    analyseAPI.getStatus().then((r) => setService(r.data)).catch(() => setService(null));
+    load();
+  }, [load]);
+
+  // Polling tant qu'une analyse est en attente ou en cours.
+  useEffect(() => {
+    const enCours = data?.documents?.some(
+      (d) => d.analyse && EN_COURS.includes(d.analyse.status));
+    if (!enCours) {
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+      return;
+    }
+    if (!pollRef.current) pollRef.current = setInterval(load, POLL_MS);
+  }, [data, load]);
+
+  useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
+
+  const handleAnalyser = async (idDocument) => {
+    setActionLoading(idDocument);
+    try { await analyseAPI.lancer(idDocument); await load(); }
+    catch (e) { setError(e.response?.data?.detail || 'Erreur au lancement de l\'analyse'); }
+    finally { setActionLoading(null); }
+  };
+
+  const indisponible = service && service.disponible === false;
+
+  return ReactDOM.createPortal(
+    <div className="co-modal-overlay" onClick={onClose}>
+      <div className="co-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 720 }}>
+        <div className="co-modal-header">
+          <span className="co-modal-title">
+            <i className="ti ti-sparkles" aria-hidden="true" /> Analyse IA — {dossier.company}
+          </span>
+        </div>
+        <div className="co-modal-body" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
+          {error && <div style={{ color: 'var(--c-red)', fontSize: 13, marginBottom: 12 }}>{error}</div>}
+
+          {indisponible && (
+            <div style={{ color: 'var(--c-orange, #FFB347)', fontSize: 13, marginBottom: 12 }}>
+              <i className="ti ti-alert-circle" aria-hidden="true" /> {service.message}
+            </div>
+          )}
+          {service?.disponible && service.simule && (
+            <div className="ia-trace" style={{ borderTop: 'none', marginTop: 0, marginBottom: 14, paddingTop: 0 }}>
+              Fournisseur : {service.provider} ({service.modele}) — analyses simulées,
+              aucun document n'est transmis à un service externe.
+            </div>
+          )}
+
+          {loading && <div className="co-loader"><div className="co-spinner" /></div>}
+
+          {!loading && data && data.documents.length === 0 && (
+            <div className="co-empty"><i className="ti ti-files-off" /><p>Aucun document déposé</p></div>
+          )}
+
+          {!loading && data?.documents?.map((d) => {
+            const a = d.analyse;
+            const consultable = a && ['terminee', 'echec'].includes(a.status);
+            const deplie = ouvert === d.id_document;
+            const enCours = a && EN_COURS.includes(a.status);
+            return (
+              <div key={d.id_document} style={{ marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <i className="ti ti-file" style={{ color: '#A78BFA' }} aria-hidden="true" />
+                  <span style={{ fontSize: 13, flex: 1, minWidth: 140 }}>{d.nom}</span>
+                  <span className="co-td-date">{d.type}</span>
+                  <AnalyseBadge status={a?.status} />
+                  {!enCours && (
+                    <button
+                      className="ia-btn"
+                      disabled={actionLoading === d.id_document || indisponible}
+                      onClick={() => handleAnalyser(d.id_document)}
+                    >
+                      <i className="ti ti-sparkles" aria-hidden="true" />
+                      {actionLoading === d.id_document
+                        ? 'Lancement…'
+                        : a ? 'Relancer' : 'Analyser'}
+                    </button>
+                  )}
+                  {consultable && (
+                    <button
+                      className="ia-doc-toggle"
+                      onClick={() => setOuvert(deplie ? null : d.id_document)}
+                      aria-expanded={deplie}
+                      aria-label={deplie ? 'Masquer l\'analyse' : 'Voir l\'analyse'}
+                    >
+                      <i className={`ti ti-chevron-${deplie ? 'up' : 'down'}`} />
+                    </button>
+                  )}
+                </div>
+                {deplie && <AnalysePanel analyse={a} />}
+              </div>
+            );
+          })}
+
+          {!loading && data && data.score_document > 0 && (
+            <div className="ia-trace">
+              Score documentaire du dossier : <strong>{data.score_document}</strong>/100
+              {' '}({data.analyses_terminees} document(s) analysé(s)) — pondéré à 40 % dans le score global.
+            </div>
+          )}
+        </div>
+        <div className="co-modal-footer">
+          <button className="co-modal-cancel" onClick={onClose}>Fermer</button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
 
 function CreateDossierModal({ onClose, onCreated }) {
   const [form, setForm] = useState({ nom: '', secteur: '', taille: 'PME', client_email: '' });
@@ -79,6 +215,7 @@ export default function CourtierDossiers() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [showCreate, setShowCreate] = useState(false);
+  const [analyseDossier, setAnalyseDossier] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
 
   const load = useCallback(async () => {
@@ -220,6 +357,15 @@ export default function CourtierDossiers() {
                             <i className="ti ti-file-invoice" /> Devis
                           </button>
                         )}
+                        {d.status !== 'draft' && (
+                          <button
+                            className="co-row-btn"
+                            onClick={() => setAnalyseDossier(d)}
+                            title="Analyse IA des preuves documentaires"
+                          >
+                            <i className="ti ti-sparkles" /> Analyse IA
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -238,6 +384,13 @@ export default function CourtierDossiers() {
         <CreateDossierModal
           onClose={() => setShowCreate(false)}
           onCreated={() => { setShowCreate(false); load(); }}
+        />
+      )}
+
+      {analyseDossier && (
+        <AnalyseModal
+          dossier={analyseDossier}
+          onClose={() => { setAnalyseDossier(null); load(); }}
         />
       )}
     </>

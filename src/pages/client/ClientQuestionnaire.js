@@ -86,7 +86,18 @@ export default function ClientQuestionnaire({ dossier, onSuccess }) {
   const visibleQuestions = questions.filter(
     (q) => visibility[String(q.id_question)] !== false
   );
-  const current = visibleQuestions[step];
+
+  // Le questionnaire est adaptatif : une réponse peut masquer des questions et
+  // donc raccourcir la liste. Sans ce recadrage, `step` sort des bornes et
+  // l'écran devient blanc, sans même les boutons de navigation pour en sortir.
+  useEffect(() => {
+    if (visibleQuestions.length > 0 && step > visibleQuestions.length - 1) {
+      setStep(visibleQuestions.length - 1);
+    }
+  }, [visibleQuestions.length, step]);
+
+  const stepClamped = Math.min(step, Math.max(visibleQuestions.length - 1, 0));
+  const current = visibleQuestions[stepClamped];
 
   // ── Ré-évaluation après chaque réponse ───────────────────────────
   const evaluateWithDebounce = useCallback((newReponses) => {
@@ -181,12 +192,35 @@ export default function ClientQuestionnaire({ dossier, onSuccess }) {
     );
   }
 
-  if (!current) return null;
+  // Filet de sécurité : plutôt qu'un écran blanc muet, on explique et on
+  // propose une sortie (soumettre les réponses déjà saisies).
+  if (!current) {
+    return (
+      <div className="cl-empty">
+        <i className="ti ti-help-circle" />
+        <p>
+          {questions.length === 0
+            ? 'Aucune question disponible pour le moment.'
+            : 'Aucune question ne correspond à votre profil.'}
+        </p>
+        {Object.keys(reponses).length > 0 && (
+          <button
+            className="cl-btn-primary"
+            style={{ marginTop: 12 }}
+            onClick={handleSubmit}
+            disabled={submitting}
+          >
+            {submitting ? 'Envoi…' : <><i className="ti ti-send" /> Soumettre mes réponses</>}
+          </button>
+        )}
+      </div>
+    );
+  }
 
   const mat = MATURITY[maturity] || MATURITY.inconnu;
   const currentSection = current.section || 'general';
   const sectionInfo = SECTIONS[currentSection] || SECTIONS.general;
-  const isLast = step === visibleQuestions.length - 1;
+  const isLast = stepClamped === visibleQuestions.length - 1;
   const hiddenCount = questions.length - visibleQuestions.length;
 
   // Score déjà existant (soumission précédente)
@@ -292,7 +326,7 @@ export default function ClientQuestionnaire({ dossier, onSuccess }) {
             {sectionInfo.label}
           </span>
           <span className="cl-q-counter">
-            {step + 1} <span style={{ opacity: 0.45 }}>/ {visibleQuestions.length}</span>
+            {stepClamped + 1} <span style={{ opacity: 0.45 }}>/ {visibleQuestions.length}</span>
           </span>
         </div>
 
@@ -368,14 +402,14 @@ export default function ClientQuestionnaire({ dossier, onSuccess }) {
       <div className="cl-q-nav">
         <button
           className="cl-btn-ghost"
-          onClick={() => setStep((s) => Math.max(0, s - 1))}
-          disabled={step === 0}
+          onClick={() => setStep(Math.max(0, stepClamped - 1))}
+          disabled={stepClamped === 0}
         >
           <i className="ti ti-arrow-left" /> Précédent
         </button>
 
         {!isLast ? (
-          <button className="cl-btn-primary" onClick={() => setStep((s) => s + 1)}>
+          <button className="cl-btn-primary" onClick={() => setStep(stepClamped + 1)}>
             Suivant <i className="ti ti-arrow-right" />
           </button>
         ) : (

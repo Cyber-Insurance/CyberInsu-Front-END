@@ -1,0 +1,35 @@
+# Intégration continue du front-end : build de production à chaque push/PR.
+name: CI Front-end
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+
+      - name: Node 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+
+      - name: Installation des dépendances (npm ci)
+        run: npm ci
+
+      - name: Build de production
+        run: npm run build
+        env:
+          CI: "false" # CRA traite les warnings comme des erreurs si CI=true
+
+      - name: Publication du build (artefact de vérification)
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-front
+          path: build/
+          retention-days: 7

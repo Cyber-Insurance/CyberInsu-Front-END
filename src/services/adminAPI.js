@@ -14,4 +14,10 @@ export const adminAPI = {
   getSettings: () => api.get('/admin/settings'),
   updateSettings: (data) => api.put('/admin/settings', data),
   getHealth: () => api.get('/admin/health'),
+  // ETL / data mart analytics
+  runEtl: () => api.post('/admin/etl/run'),
+  getEtlRuns: (params) => api.get('/admin/etl/runs', { params }),
+  getAnalyticsOverview: () => api.get('/admin/analytics/overview'),
+  getAnalyticsSecteurs: () => api.get('/admin/analytics/secteurs'),
+  getAnalyticsPredictions: () => api.get('/admin/analytics/predictions'),
 };

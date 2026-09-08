@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AdminStats from './AdminStats';
+import AdminAnalytics from './AdminAnalytics';
 import AdminUsers from './AdminUsers';
 import AdminRoles from './AdminRoles';
 import AdminLogs from './AdminLogs';
@@ -10,6 +11,7 @@ import './Admin.css';
 
 const NAV = [
   { id: 'stats',    icon: 'ti-layout-dashboard', label: 'Vue globale' },
+  { id: 'analytics', icon: 'ti-chart-histogram',  label: 'Analytics (ETL)' },
   { id: 'users',    icon: 'ti-users',             label: 'Utilisateurs' },
   { id: 'roles',    icon: 'ti-shield-lock',       label: 'Rôles & Permissions' },
   { id: 'logs',     icon: 'ti-list-details',      label: 'Audit Logs' },
@@ -24,6 +26,7 @@ export default function AdminDashboard() {
 
   const pages = {
     stats:    <AdminStats />,
+    analytics: <AdminAnalytics />,
     users:    <AdminUsers />,
     roles:    <AdminRoles />,
     logs:     <AdminLogs />,
